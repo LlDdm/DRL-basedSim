@@ -131,7 +131,6 @@ public class JavaClient {
 
                     // 12. Java端获取reward并进入下一个状态。
                     double reward = manager.getReward() - res[1]; // Maximize this difference
-                    if (manager.lastAvaCompleteTim == 0) reward = 0; // No previous avg completion time to compare to
 
                     // 13. Java端将此次获取的历史数据传给Python端，Python端将其保存到replaybuff中。
                     JsonDataModels.HistoryData historyData = new JsonDataModels.HistoryData();
@@ -157,6 +156,7 @@ public class JavaClient {
                         break;
                     }
                 }
+                System.out.println(manager.avaCompleteTim);
                 if((episode+1) % 50 ==0) {
                     AvgResults.add(manager.avaCompleteTim);
                     System.out.println(manager.avaCompleteTim);

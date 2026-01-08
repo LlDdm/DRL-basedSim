@@ -26,7 +26,7 @@ class EdgeDevice {
         this.taskQueue = new LinkedBlockingQueue<>();
         this.downloadspeed = downloadspeed;
         this.uploadspeed = uploadspeed;
-        this.QueueTask_EstimateMaxComplete = 0;
+        this.QueueTask_EstimateMaxComplete = System.currentTimeMillis();
     }
 
     public int getDeviceId() {

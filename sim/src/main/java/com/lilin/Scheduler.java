@@ -8,10 +8,12 @@ import java.util.concurrent.locks.ReentrantLock;
 class Scheduler {
     private PriorityBlockingQueue<APP> apps;
     private final Lock lock;
+    private List<Long> estDevAvTim;
 
     public Scheduler() {
         this.apps = new PriorityBlockingQueue<>();
         this.lock = new ReentrantLock();
+        this.estDevAvTim = new ArrayList<>();
     }
 
     public void addApp(APP app) {
@@ -49,12 +51,11 @@ class Scheduler {
     // 将app调度
     public double[] scheduleApp(APP app, int[] actions,MobileDevice mobile) {
         Map<Integer,List<Task>> map;
-        Map<Integer,Long> estDevAvTim = new HashMap<>();
         NetWork netWork = SimManager.getInstance().getNetworkModel();
         List<EdgeDevice> devices = SimManager.getInstance().getEdgeDeviceGeneratorModel().getEdgeDevices();
         List<Task> top = app.getDag().getTpoSort();
         int[] newActions = Arrays.copyOf(actions, actions.length);
-        double[] diff = new double[1 + 1];//返回action变得前后app的完成时间差异和变得前后action的欧氏距离
+        double[] diff = new double[2];//返回action变得前后app的完成时间差异和变得前后action的欧氏距离
         List<Task> taskSortR = app.getDag().getTasks();
         taskSortR.sort(Comparator.comparing(Task::getR).reversed());
 
@@ -64,13 +65,13 @@ class Scheduler {
         //保存此刻各设备的可用时间
         for (int i=0;i<devices.size()+1;i++) {
             if(i!=devices.size()) {
-                estDevAvTim.put(i,devices.get(i).getQueueTask_EstimateMaxComplete());
+                estDevAvTim.add(devices.get(i).getQueueTask_EstimateMaxComplete());
             }else
-                estDevAvTim.put(i,mobile.getQueueTask_EstimateMaxComplete());
+                estDevAvTim.add(mobile.getQueueTask_EstimateMaxComplete());
         }
 
         //设置当前action下每个任务的估计完成时间和应用的估计完成时间
-        setTaskEstComplete(map, app,actions,devices,mobile,netWork,estDevAvTim,0,taskSortR);
+        setTaskEstComplete(map, app,actions,devices,mobile,netWork,0,taskSortR);
 
         //调度任务
         for(int k : map.keySet()){
@@ -90,7 +91,7 @@ class Scheduler {
         }
 
         //获取此次action的关键路径
-        List<Task> criticalPath = computeCriticalPath(app, top, devices, mobile, netWork);
+        List<Task> criticalPath = computeCriticalPath(top, devices, mobile, netWork);
         criticalPath.sort(Comparator.comparing(Task::getR).reversed());
 
         //获得优化action后的惩罚
@@ -104,7 +105,7 @@ class Scheduler {
             int exchangeFlag=0;//是否需要变更action的标志
 
             for(int i=0;i<devices.size()+1;i++) {
-                if (task.getDevice_Id() != i) {//与action选中设备不同的设备
+                if (newActions[task.get_taskId()] != i) {//与action选中设备不同的设备
                     if(map.containsKey(i)) {
                         for (Task t : map.get(i)) {
                             if (t.getR() > task.getR()) {
@@ -120,16 +121,16 @@ class Scheduler {
 
                         //计算更变位到当前置后的最大传输数据到达时间
                         if(task.getPredecessors().isEmpty()){
-                            inDelay = 0;
-                            inArr = app.getStartTime() + inDelay;
+                            inArr = app.getStartTime();
                         }else {
                             long MaxIn = Long.MIN_VALUE;
                             for(Task pre : task.getPredecessors()) {
                                 if(criticalPath.contains(pre)){
-                                    if(pre.getDevice_Id() == devices.size()+1)
+                                    int preDevId = newActions[pre.get_taskId()];
+                                    if(preDevId == devices.size())
                                         inDelay = 0;
                                     else
-                                        inDelay = netWork.calculate_EtoM_Delay(task.getPredecessorsMap().get(pre),devices.get(pre.getDevice_Id()).getDeviceId());
+                                        inDelay = netWork.calculate_EtoM_Delay(task.getPredecessorsMap().get(pre), preDevId);
                                     inArr = pre.getEstimate_complete_time() + inDelay;
                                     if (inArr > MaxIn)
                                         MaxIn = inArr;
@@ -137,12 +138,6 @@ class Scheduler {
                             }
                             inArr = MaxIn;
                         }
-
-                        //计算更变到当前位置后的服务器可用时间
-                        if(pTask==null)
-                            devAva = estDevAvTim.get(i);
-                        else
-                            devAva = pTask.getEstimate_complete_time();
                     }else {//当前位置为边缘或云
                         //变更位置后的计算时间
                         comTim = (long) (task.getSize() / devices.get(i).getMips());
@@ -155,10 +150,11 @@ class Scheduler {
                             long MaxIn = Long.MIN_VALUE;
                             for(Task pre : task.getPredecessors()) {
                                 if(criticalPath.contains(pre)){
-                                    if(pre.getDevice_Id() == devices.size()+1)
-                                        inDelay = netWork.calculate_MtoE_Delay(pre.getPredecessorsMap().get(pre), devices.get(i).getDeviceId());
+                                    int preDevId = newActions[pre.get_taskId()];
+                                    if(preDevId == devices.size())
+                                        inDelay = netWork.calculate_MtoE_Delay(task.getPredecessorsMap().get(pre), preDevId);
                                     else
-                                        inDelay = netWork.calculate_EtoE_Delay(task.getPredecessorsMap().get(pre),devices.get(pre.getDevice_Id()).getDeviceId(),mobile.getDeviceId());
+                                        inDelay = netWork.calculate_EtoE_Delay(task.getPredecessorsMap().get(pre),preDevId,devices.get(i).getDeviceId());
                                     inArr = pre.getEstimate_complete_time() + inDelay;
                                     if (inArr > MaxIn)
                                         MaxIn = inArr;
@@ -166,13 +162,13 @@ class Scheduler {
                             }
                             inArr = MaxIn;
                         }
-
-                        //计算更变到当前位置后的服务器可用时间
-                        if(pTask==null)
-                            devAva = estDevAvTim.get(i);
-                        else
-                            devAva = pTask.getEstimate_complete_time();
                     }
+
+                    //计算更变到当前位置后的服务器可用时间
+                    if(pTask==null)
+                        devAva = estDevAvTim.get(i);
+                    else
+                        devAva = pTask.getEstimate_complete_time();
 
                     //计算变更后任务的完成时间
                     newCompleteTim = Math.max(devAva,inArr) + comTim;
@@ -185,7 +181,7 @@ class Scheduler {
                         else
                             outDelay = netWork.calculate_EtoM_Delay(app.getOutputsize(),devices.get(i).getDeviceId());
                         if(newCompleteTim + outDelay < app.getEstimateCompleteTime()) {
-                            diff[1] = app.getEstimateCompleteTime() - newCompleteTim + outDelay;
+                            diff[1] = app.getEstimateCompleteTime() - (newCompleteTim + outDelay);
                             app.setEstimateCompleteTime(newCompleteTim + outDelay);
                             exchangeFlag = 1;
                         }
@@ -197,8 +193,11 @@ class Scheduler {
                     //如果变更后能更快完成就更新action,目前先试一试只增加惩罚，不真正变迁任务
                     if(exchangeFlag == 1) {
                         newActions[task.get_taskId()] = i;
-                        map = getScheduleMap(app,newActions);
-                        setTaskEstComplete(map, app, newActions,devices,mobile,netWork,estDevAvTim,task.get_taskId(),taskSortR);
+                        task.setEstimate_complete_time(newCompleteTim);
+                        map.get(task.getDevice_Id()).remove(task);
+                        map.computeIfAbsent(i, k -> new ArrayList<>()).add(task);
+                        map.get(i).sort(Comparator.comparing(Task::getR).reversed());
+                        setTaskEstComplete(map, app, newActions,devices,mobile,netWork,task.get_taskId()+1,taskSortR);
                     }
                 }
             }
@@ -229,13 +228,13 @@ class Scheduler {
 
     //根据action计算每个任务的估计完成时间
     public void setTaskEstComplete(Map<Integer,List<Task>> map, APP app, int[] actions, List<EdgeDevice> devices,
-                                   MobileDevice mobile, NetWork netWork, Map<Integer,Long> estDevAvTim,int curTaskId, List<Task> taskSortR) {
+                                   MobileDevice mobile, NetWork netWork,int curTaskId, List<Task> taskSortR) {
 
         //获取每个任务的估计开始时间
         for(int i=curTaskId;i<taskSortR.size();i++) {
             Task task = taskSortR.get(i);
-            int deviceId = task.getDevice_Id();
-            long deviceAva = estDevAvTim.get(deviceId);
+            int deviceId = actions[task.get_taskId()];
+            long deviceAva;
             int index = map.get(deviceId).indexOf(task);
             long inArr;
             long inDelay;
@@ -254,7 +253,7 @@ class Scheduler {
                         if (preDeviceId == deviceId) {
                             inDelay = 0;
                         } else {
-                            inDelay = netWork.calculate_EtoM_Delay(task.getPredecessorsMap().get(pre), devices.get(preDeviceId).getDeviceId());
+                            inDelay = netWork.calculate_EtoM_Delay(task.getPredecessorsMap().get(pre), preDeviceId);
                         }
                         inArr = pre.getEstimate_complete_time() + inDelay;
                         ;
@@ -266,7 +265,7 @@ class Scheduler {
             } else {//如果任务在边缘或云服务器上执行
                 comDelay = (long) (task.getSize() / devices.get(deviceId).getMips());
                 if (task.getPredecessors().isEmpty()) {
-                    inArr = app.getStartTime() + netWork.calculate_MtoE_Delay(app.getInputsize(), devices.get(deviceId).getDeviceId());
+                    inArr = app.getStartTime() + netWork.calculate_MtoE_Delay(app.getInputsize(), deviceId);
                 } else {
                     long MaxIn = Long.MIN_VALUE;
                     for (Task pre : task.getPredecessors()) {
@@ -274,9 +273,9 @@ class Scheduler {
                         if (preDeviceId == deviceId) {
                             inDelay = 0;
                         } else if (preDeviceId == devices.size()) {
-                            inDelay = netWork.calculate_MtoE_Delay(task.getPredecessorsMap().get(pre), devices.get(deviceId).getDeviceId());
+                            inDelay = netWork.calculate_MtoE_Delay(task.getPredecessorsMap().get(pre), deviceId);
                         } else {
-                            inDelay = netWork.calculate_EtoE_Delay(task.getPredecessorsMap().get(pre), devices.get(preDeviceId).getDeviceId(), devices.get(deviceId).getDeviceId());
+                            inDelay = netWork.calculate_EtoE_Delay(task.getPredecessorsMap().get(pre), preDeviceId, deviceId);
                         }
                         inArr = pre.getEstimate_complete_time() + inDelay;
                         if (inArr > MaxIn)
@@ -286,9 +285,10 @@ class Scheduler {
                 }
             }
             //计算所在服务器的可以时间
-            for (int j = 0; j < index; j++) {
-                deviceAva += map.get(deviceId).get(j).getEstimate_complete_time();
-            }
+            if(index==0)
+                deviceAva = estDevAvTim.get(deviceId);
+            else
+                deviceAva = map.get(deviceId).get(index-1).getEstimate_complete_time();
 
             task.setEstimate_complete_time(Math.max(deviceAva, inArr) + comDelay);
 
@@ -298,14 +298,14 @@ class Scheduler {
                 if (deviceId == devices.size())
                     outDelay = 0;
                 else
-                    outDelay = netWork.calculate_EtoM_Delay(app.getOutputsize(), devices.get(deviceId).getDeviceId());
+                    outDelay = netWork.calculate_EtoM_Delay(app.getOutputsize(), deviceId);
                 if (task.getEstimate_complete_time() + outDelay > app.getEstimateCompleteTime())
                     app.setEstimateCompleteTime(task.getEstimate_complete_time() + outDelay);
             }
         }
     }
 
-    public List<Task> computeCriticalPath(APP app, List<Task> tpoSort, List<EdgeDevice> devices, MobileDevice mobile, NetWork netWork) {
+    public List<Task> computeCriticalPath(List<Task> tpoSort, List<EdgeDevice> devices, MobileDevice mobile, NetWork netWork) {
         Map<Task, Long> earliestStart = new HashMap<>();
         Map<Task, Long> latestStart = new HashMap<>();
         List<Task> criticalTasks = new ArrayList<>();
@@ -329,7 +329,7 @@ class Scheduler {
                             task.setInDelay(pre,0L);
                             pre.setOutDelay(task,0L);
                         }else {
-                            inDelay = netWork.calculate_EtoM_Delay(task.getPredecessorsMap().get(pre), devices.get(preDeviceId).getDeviceId());
+                            inDelay = netWork.calculate_EtoM_Delay(task.getPredecessorsMap().get(pre), preDeviceId);
                             task.setInDelay(pre,inDelay);
                             pre.setOutDelay(task,inDelay);
                         }
@@ -353,11 +353,11 @@ class Scheduler {
                             task.setInDelay(pre,0L);
                             pre.setOutDelay(task,0L);
                         }else if(preDeviceId == devices.size()){
-                            inDelay = netWork.calculate_MtoE_Delay(task.getPredecessorsMap().get(pre), devices.get(preDeviceId).getDeviceId());
+                            inDelay = netWork.calculate_MtoE_Delay(task.getPredecessorsMap().get(pre), preDeviceId);
                             task.setInDelay(pre,inDelay);
                             pre.setOutDelay(task,inDelay);
                         }else {
-                            inDelay = netWork.calculate_EtoE_Delay(task.getPredecessorsMap().get(pre), devices.get(preDeviceId).getDeviceId(), devices.get(deviceId).getDeviceId());
+                            inDelay = netWork.calculate_EtoE_Delay(task.getPredecessorsMap().get(pre), preDeviceId, deviceId);
                             task.setInDelay(pre,inDelay);
                             pre.setOutDelay(task,inDelay);
                         }

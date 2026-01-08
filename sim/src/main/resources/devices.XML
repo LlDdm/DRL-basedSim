@@ -55,50 +55,5 @@
             <downloadspeed>500</downloadspeed>
             <uploadspeed>500</uploadspeed>
         </device>
-        <device name="Edge_Device6">
-            <id>6</id>
-            <mips>3800</mips>
-            <latitude>15</latitude>
-            <longitude>16</longitude>
-            <attractiveness>1</attractiveness>
-            <downloadspeed>500</downloadspeed>
-            <uploadspeed>500</uploadspeed>
-        </device>
-        <device name="Edge_Device7">
-            <id>7</id>
-            <mips>4500</mips>
-            <latitude>16</latitude>
-            <longitude>15</longitude>
-            <attractiveness>1</attractiveness>
-            <downloadspeed>500</downloadspeed>
-            <uploadspeed>500</uploadspeed>
-        </device>
-        <device name="Edge_Device8">
-            <id>8</id>
-            <mips>3600</mips>
-            <latitude>20</latitude>
-            <longitude>15</longitude>
-            <attractiveness>1</attractiveness>
-            <downloadspeed>500</downloadspeed>
-            <uploadspeed>500</uploadspeed>
-        </device>
-        <device name="Edge_Device9">
-            <id>9</id>
-            <mips>4000</mips>
-            <latitude>20</latitude>
-            <longitude>14</longitude>
-            <attractiveness>1</attractiveness>
-            <downloadspeed>500</downloadspeed>
-            <uploadspeed>500</uploadspeed>
-        </device>
-        <device name="Edge_Device10">
-            <id>10</id>
-            <mips>4800</mips>
-            <latitude>15</latitude>
-            <longitude>20</longitude>
-            <attractiveness>1</attractiveness>
-            <downloadspeed>500</downloadspeed>
-            <uploadspeed>500</uploadspeed>
-        </device>
     </devices>
 </config>

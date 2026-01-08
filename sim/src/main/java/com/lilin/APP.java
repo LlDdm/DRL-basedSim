@@ -29,7 +29,7 @@ public class APP implements Comparable<APP> {
         this.completeTime = 0;
         this.executionTime = executionTime;
         this.offsetTime = offsetTime;
-        this.EstimateCompleteTime = 0;
+        this.EstimateCompleteTime = Long.MAX_VALUE;
     }
 
     public int getAppid() {

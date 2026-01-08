@@ -75,7 +75,6 @@ public class LoadGeneratorModel {
                     interval = ps.sample();
                 }
                 virtualTime += interval;
-                System.out.println(virtualTime);
 
                 double avg_task_size = APPlookuptable[2];
 
@@ -89,18 +88,6 @@ public class LoadGeneratorModel {
                 double appoutputSize = avg_tra_size * SimSettings.Out_ratio;
 
                 DAG dag = generateDAG(task_num, max_task_num, avg_task_size,avg_tra_size, app_id,i,appinputSize,appoutputSize);
-
-                // 设置任务前驱同步信号量
-                int lastTaskNum = 0;
-                for(Task task : dag.getTasks()){
-                    if(task.getPredecessors().isEmpty())
-                        task.wait_pre = new CountDownLatch(1);
-                    else
-                        task.wait_pre = new CountDownLatch(task.getPredecessors().size());
-                    if(task.getSuccessors().isEmpty())
-                        lastTaskNum++;
-                }
-                dag.wait_pre = new CountDownLatch(lastTaskNum);
 
                 long offsetTime;
 

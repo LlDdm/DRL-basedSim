@@ -48,6 +48,8 @@ public class SimManager {
         instance = this;
         this.OverDeadline = 0;
         this.running = true;
+        this.lastAvaCompleteTim = 0;
+        this.avaCompleteTim = 0;
     }
 
     public static SimManager getInstance(){
@@ -65,7 +67,6 @@ public class SimManager {
         System.out.println("Creating Loads...");
         loadGeneratorModel = scenarioFactory.getLoadGeneratorModel();
         loadGeneratorModel.generatorAPPs();
-        wait_complete = new CountDownLatch(loadGeneratorModel.getApp_num());
         System.out.println("Done.");
     }
 
@@ -193,16 +194,12 @@ public class SimManager {
         for(int i=0; i<devices.size()+1; i++){
             if(i!=devices.size()){
                 mips[i] = devices.get(i).getMips();
-                if(devices.get(i).getQueueTask_EstimateMaxComplete() ==0)
-                    avTimes[i] = 0;
-                else
-                    avTimes[i] = devices.get(i).getQueueTask_EstimateMaxComplete() - System.currentTimeMillis();
+                if(currentApp!=null)
+                    avTimes[i] = devices.get(i).getQueueTask_EstimateMaxComplete() - currentApp.getStartTime();
             }else {
                 mips[i] = mobile.getMips();
-                if(mobile.getQueueTask_EstimateMaxComplete() ==0)
-                    avTimes[i] = 0;
-                else
-                    avTimes[i] = mobile.getQueueTask_EstimateMaxComplete() - System.currentTimeMillis();
+                if(currentApp!=null)
+                    avTimes[i] = mobile.getQueueTask_EstimateMaxComplete() - currentApp.getStartTime();
             }
         }
         state.put("mips",mips);
@@ -217,7 +214,8 @@ public class SimManager {
     }
 
     public double[] applyAction(int[] actions){
-        return  scheduler.scheduleApp(currentApp,actions,loadGeneratorModel.getMobileDevices().get(0));
+        int[] ac = Arrays.copyOf(actions, currentApp.getDag().getTasks().size());
+        return  scheduler.scheduleApp(currentApp,ac,loadGeneratorModel.getMobileDevices().get(0));
     }
 
     public void setAvaCompleteTim(){
@@ -269,6 +267,7 @@ public class SimManager {
                 app.setDeadline(app.getStartTime() + app.getExecutionTime());
                 app.setCompleteTime(0);
                 app.setMakeSpan(0);
+                app.setEstimateCompleteTime(Long.MAX_VALUE);
                 // 设置任务前驱同步信号量
                 int lastTaskNum = 0;
                 for(Task task : app.getDag().getTasks()){
@@ -283,6 +282,7 @@ public class SimManager {
                     task.allocate_semaphore = new Semaphore(0);
                 }
                 app.getDag().wait_pre = new CountDownLatch(lastTaskNum);
+                wait_complete = new CountDownLatch(loadGeneratorModel.getApp_num());
             }
         }
     }

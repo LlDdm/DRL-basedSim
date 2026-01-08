@@ -23,7 +23,7 @@ class Task {
     private int device_Id;
     private long estimate_complete_time;
     private int mobileDeviceId;
-    public Semaphore allocate_semaphore = new Semaphore(0);
+    public Semaphore allocate_semaphore;
     public CountDownLatch wait_pre;
 
     Task(int id, double size, int APPid, int mobileDeviceId) {
@@ -38,6 +38,7 @@ class Task {
         this.mobileDeviceId = mobileDeviceId;
         this.inDelay = new HashMap<>();
         this.outDelay = new HashMap<>();
+        this.allocate_semaphore = new Semaphore(0);
     }
 
     // 添加前驱任务并记录边的大小
