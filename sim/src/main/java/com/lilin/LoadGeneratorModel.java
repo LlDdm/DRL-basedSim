@@ -75,6 +75,7 @@ public class LoadGeneratorModel {
                     interval = ps.sample();
                 }
                 virtualTime += interval;
+                System.out.println(virtualTime);
 
                 double avg_task_size = APPlookuptable[2];
 
@@ -139,7 +140,7 @@ public class LoadGeneratorModel {
         Task startTask = new Task(-1, 0, appid, mobileDeviceId);  // 起点
         Task endTask = new Task(-2, 0, appid, mobileDeviceId);    // 汇点
 
-        double task_sizeBias = 20;
+        double task_sizeBias = 100;
         // 2. 创建任务节点
         for (int i = 0; i < task_num; i++) {
             double task_size = rng.nextGaussian() * task_sizeBias + avg_task_size;

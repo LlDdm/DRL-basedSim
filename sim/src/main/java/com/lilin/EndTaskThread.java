@@ -17,7 +17,7 @@ public class EndTaskThread extends Thread {
 
         try {
             // 模拟网络传输延迟
-            Thread.sleep(delay);  // 毫秒
+            Thread.sleep(delay/20);  // 毫秒
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }

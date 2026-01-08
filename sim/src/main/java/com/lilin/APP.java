@@ -2,7 +2,7 @@ package com.lilin;
 
 import java.util.concurrent.CountDownLatch;
 
-public class APP{
+public class APP implements Comparable<APP> {
     private int Appid;
     private long startTime, deadline;
     private long executionTime;
@@ -116,6 +116,11 @@ public class APP{
 
     public void setEstimateCompleteTime(long estimateCompleteTime) {
         EstimateCompleteTime = estimateCompleteTime;
+    }
+
+    @Override
+    public int compareTo(APP o) {
+        return Long.compare(o.getDeadline(), this.getDeadline());
     }
 }
 

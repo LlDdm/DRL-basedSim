@@ -12,7 +12,7 @@
         </device>
         <device name="Edge_Device1">
             <id>1</id>
-            <mips>5000</mips>
+            <mips>4000</mips>
             <latitude>20</latitude>
             <longitude>20</longitude>
             <attractiveness>1</attractiveness>
@@ -21,7 +21,7 @@
         </device>
         <device name="Edge_Device2">
             <id>2</id>
-            <mips>5000</mips>
+            <mips>2500</mips>
             <latitude>19</latitude>
             <longitude>21</longitude>
             <attractiveness>1</attractiveness>
@@ -30,7 +30,7 @@
         </device>
         <device name="Edge_Device3">
             <id>3</id>
-            <mips>5000</mips>
+            <mips>4200</mips>
             <latitude>20</latitude>
             <longitude>19</longitude>
             <attractiveness>1</attractiveness>
@@ -48,7 +48,7 @@
         </device>
         <device name="Edge_Device5">
             <id>5</id>
-            <mips>5000</mips>
+            <mips>6000</mips>
             <latitude>16</latitude>
             <longitude>16</longitude>
             <attractiveness>1</attractiveness>
@@ -57,7 +57,7 @@
         </device>
         <device name="Edge_Device6">
             <id>6</id>
-            <mips>5000</mips>
+            <mips>3800</mips>
             <latitude>15</latitude>
             <longitude>16</longitude>
             <attractiveness>1</attractiveness>
@@ -66,7 +66,7 @@
         </device>
         <device name="Edge_Device7">
             <id>7</id>
-            <mips>5000</mips>
+            <mips>4500</mips>
             <latitude>16</latitude>
             <longitude>15</longitude>
             <attractiveness>1</attractiveness>
@@ -75,7 +75,7 @@
         </device>
         <device name="Edge_Device8">
             <id>8</id>
-            <mips>5000</mips>
+            <mips>3600</mips>
             <latitude>20</latitude>
             <longitude>15</longitude>
             <attractiveness>1</attractiveness>
@@ -84,7 +84,7 @@
         </device>
         <device name="Edge_Device9">
             <id>9</id>
-            <mips>5000</mips>
+            <mips>4000</mips>
             <latitude>20</latitude>
             <longitude>14</longitude>
             <attractiveness>1</attractiveness>
@@ -93,7 +93,7 @@
         </device>
         <device name="Edge_Device10">
             <id>10</id>
-            <mips>5000</mips>
+            <mips>4800</mips>
             <latitude>15</latitude>
             <longitude>20</longitude>
             <attractiveness>1</attractiveness>

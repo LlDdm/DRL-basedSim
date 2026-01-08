@@ -108,11 +108,13 @@ public class JavaClient {
                 }
 
                 JsonDataModels.StateUpdateRequest initState = new JsonDataModels.StateUpdateRequest();
-                initState.state = manager.getState(diff);
+                initState.state = manager.getState(diff,false);
                 sendJson(initState);
+
+                int appNum = manager.getLoadGeneratorModel().getApp_num();
                 // System.out.println("Sent state to Python."); // Debug
 
-                for (int t = 0; t < manager.getLoadGeneratorModel().getApp_num(); t++) {
+                for (int t = 0; t < appNum; t++) {
 
                     // 11. Python端将action发送给Java端，Java端收到action后将当前任务调度到对应的服务器执行。
                     JsonDataModels.ActionRequest actionRequest = receiveJson(JsonDataModels.ActionRequest.class);
@@ -131,9 +133,20 @@ public class JavaClient {
                     double reward = manager.getReward() - res[1]; // Maximize this difference
                     if (manager.lastAvaCompleteTim == 0) reward = 0; // No previous avg completion time to compare to
 
-                    boolean episodeDone = false;
-                    if(t == manager.getLoadGeneratorModel().getApp_num() - 1){
-                        episodeDone = true; // Episode done if max timesteps reached
+                    // 13. Java端将此次获取的历史数据传给Python端，Python端将其保存到replaybuff中。
+                    JsonDataModels.HistoryData historyData = new JsonDataModels.HistoryData();
+                    historyData.reward = reward;
+
+                    boolean episodeDone = (t == appNum - 1);
+                    // Episode done if max timesteps reached
+
+                    historyData.done = episodeDone;
+                    historyData.next_state = manager.getState(res[0],episodeDone); // This is S_t+1
+                    sendJson(historyData);
+                    // System.out.println("Sent history data to Python. Reward: " + reward); // Debug
+
+                    if (episodeDone) {
+                        System.out.println("Java Simulation: Episode " + episode + " finished at max timesteps.");
                         try {
                             // 等待剩余app完成
                             manager.wait_complete.await();
@@ -141,18 +154,6 @@ public class JavaClient {
                         } catch (InterruptedException e) {
                             Thread.currentThread().interrupt();
                         }
-                    }
-
-                    // 13. Java端将此次获取的历史数据传给Python端，Python端将其保存到replaybuff中。
-                    JsonDataModels.HistoryData historyData = new JsonDataModels.HistoryData();
-                    historyData.reward = reward;
-                    historyData.done = episodeDone;
-                    historyData.next_state = manager.getState(res[0]); // This is S_t+1
-                    sendJson(historyData);
-                    // System.out.println("Sent history data to Python. Reward: " + reward); // Debug
-
-                    if (episodeDone) {
-                        System.out.println("Java Simulation: Episode " + episode + " finished at max timesteps.");
                         break;
                     }
                 }

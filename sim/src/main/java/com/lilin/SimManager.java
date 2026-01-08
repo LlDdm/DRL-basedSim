@@ -152,10 +152,11 @@ public class SimManager {
 
     public boolean isRunning() { return running; }
 
-    public Map<String,Object> getState(double diff){
-        do {
+    public Map<String,Object> getState(double diff, boolean episodeDone){
+        if(!episodeDone)
             currentApp = scheduler.getApp();
-        }while (currentApp == null && result.isEmpty());
+        else
+            currentApp = null;
         Map<String,Object> state = new HashMap<>();
         List<EdgeDevice> devices = edgeDeviceGeneratorModel.getEdgeDevices();
         MobileDevice mobile = loadGeneratorModel.getMobileDevices().get(0);

@@ -147,8 +147,8 @@ public class NetWork {
 //        return (bw * Math.log(1 + SN) / LOG2) / 8 ;
 //    }
 
-    public long calculate_MtoE_Delay(double appInputSize,int disID){
-        return (long) (appInputSize * delayMatrix[delayMatrix.length-1][disID]);
+    public long calculate_MtoE_Delay(double dataSize,int disID){
+        return (long) (dataSize * delayMatrix[delayMatrix.length-1][disID]);
     }
 
     public long calculate_EtoE_Delay(double dataSize,int srcID,int disID){

@@ -1,33 +1,28 @@
 package com.lilin;
 
 import java.util.*;
+import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 class Scheduler {
-    private PriorityQueue<APP> apps;
+    private PriorityBlockingQueue<APP> apps;
     private final Lock lock;
 
     public Scheduler() {
-        this.apps = new PriorityQueue<>(new AppComparator());
+        this.apps = new PriorityBlockingQueue<>();
         this.lock = new ReentrantLock();
     }
 
     public void addApp(APP app) {
-        lock.lock();
-        try {
-            apps.add(app);  // 添加元素
-        } finally {
-            lock.unlock();  // 释放锁
-        }
+        apps.put(app);  // 添加元素
     }
 
     public APP getApp() {
-        lock.lock();
         try {
-            return apps.poll();  // 添加元素
-        } finally {
-            lock.unlock();  // 释放锁
+            return apps.take();  // 添加元素
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 
